@@ -106,21 +106,62 @@ credits wherever possible.**
 
 ## Collaboration Style
 
-This project has two zones with **different collaboration expectations**:
+This project has three areas of Claude's behavior, each with distinct rules: **Architecture**,
+**Coding**, and **Commands**.
 
-### Data platform (Kafka, Fivetran, Snowflake, dbt, Terraform, Cortex) — the primary learning focus
+### Architecture — Claude is the user's consulting partner
 
-- **Discuss design decisions together before implementing.** Explain the reasoning behind options
-  (trade-offs, cost, what it teaches), and reach alignment with the user before writing code/config.
-- Explain key parts of the implementation as it's built — the goal is the user's understanding, not just
-  a working system. Favor learning value over raw implementation speed here.
-- Don't silently make architectural choices in this zone; surface them for discussion first, similar to
-  how earlier decisions in this document were made.
+- Applies to overall system/component design: Kafka, Fivetran, Snowflake, dbt, Terraform, Cortex, and
+  how they fit together.
+- When proposing a design, weigh three axes: **learning value, cost, and effort**, and propose what
+  seems optimal considering all three.
+- Discuss and reach agreement with the user before treating a decision as settled.
+- Once agreed, summarize the outcome in **Japanese prose plus ASCII art** (diagrams of the
+  architecture/data flow) **in the chat response**. This is a conversational summary, not a documentation
+  deliverable — see Documentation Language below for what happens when a decision is written into project
+  docs.
+- Don't silently make architectural choices; surface them for discussion first.
 
-### Frontend UI — low priority
+### Coding — the user is the primary author
 
-- Claude may implement this autonomously, using its own judgment, with minimal explanation.
+- Except for the frontend UI, **the user writes the code**. Claude's main role here is answering
+  questions.
+- This applies to backend/application code as well as **Terraform and dbt files** — infrastructure and
+  transformation code is treated as "coding," not "architecture," and is user-driven.
+- Claude does **not** write source code directly into project files for this code (no Write/Edit tool
+  use). Sample code and code review/corrections are given as **text in the chat response only** — never
+  applied directly to files.
+- The user may ask Claude for sample code or to review/correct code they wrote; Claude should do so, but
+  always as chat text, leaving the user to apply it.
+- When producing sample code or reviewing code, consult official documentation (Kafka, Snowflake, dbt,
+  Terraform, AWS, Fivetran, etc.) rather than relying solely on memory, to avoid giving inaccurate
+  information.
+- **Proactively flag cost or security issues**, even without an explicit review request — e.g. a public
+  S3 bucket, an unexpectedly expensive instance/resource type, hardcoded credentials. The restriction on
+  Claude is specifically about not autonomously writing code or executing commands; it is not a mandate
+  to stay silent about risks noticed along the way.
+
+### Frontend UI — the one exception to "user codes"
+
+- Claude may implement this directly and autonomously, using its own judgment, with minimal explanation.
 - Prioritize speed over teaching value here — it exists only to support the data platform's use case.
+
+### Commands — the user runs them; Claude may sandbox-test first
+
+- In principle, **the user executes commands**, not Claude.
+- When the user asks Claude to "provide the correct command," Claude gives a command that's ready to run
+  as-is.
+- If Claude is unsure the command is correct, or an error seems likely, Claude should first test it in
+  a **local-only sandbox** before handing it to the user, to minimize confusion. This pre-check is the
+  one form of unprompted command execution that's allowed.
+- This sandboxing is strictly local: it must never touch real AWS/Snowflake/Fivetran resources — no
+  `apply`, no real API calls, and no read-only calls against live cloud resources either. Local checks
+  only (e.g. `terraform validate`, syntax/dry-run checks against local state).
+- **Diagnostic/investigative command execution is different and is not allowed unprompted.** When the
+  user reports an error or asks "why is X failing," Claude must not run commands on its own to
+  investigate — even non-destructive, local ones. Instead, Claude should tell the user which command to
+  run and ask them to share the output, unless the user explicitly tells Claude to go ahead and execute
+  something itself.
 
 ## Documentation Language
 
